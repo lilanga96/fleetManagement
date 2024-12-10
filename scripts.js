@@ -69,7 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 
-    function renderVehicles() {
+    async function renderVehicles() {       
+    
         pageTitle.innerText = "Manage Vehicles";
         content.innerHTML = `
             <h3>Vehicle List</h3>
@@ -82,35 +83,69 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="vehicle-table">
                     <thead>
                         <tr>
+                            <th>id</th>
                             <th>Name</th>
                             <th>Number Plate</th>
                             <th>Actions</th>
+                            
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
         `;
+    
         const form = document.getElementById("vehicle-form");
         const tableBody = document.querySelector("#vehicle-table tbody");
-
-        form.addEventListener("submit", (e) => {
+    
+        
+        async function fetchVehicles() {
+            const { data, error } = await supabase.from("vehicles").select("*");
+            if (error) {
+                console.error("Error fetching vehicles:", error);
+                return;
+            }
+            updateTable(tableBody, data, "vehicle");
+        }
+    
+        
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const vehicleName = document.getElementById("vehicle-name").value;
             const numberPlate = document.getElementById("number-plate").value;
-
-            vehicles.push({ name: vehicleName, plate: numberPlate });
-            updateTable(tableBody, vehicles, "vehicle");
+    
+            const { error } = await supabase.from("vehicles").insert([{ name: vehicleName, plate: numberPlate }]);
+            if (error) {
+                console.error("Error adding vehicle:", error);
+                return;
+            }
+    
+            fetchVehicles(); 
             form.reset();
         });
-
-        updateTable(tableBody, vehicles, "vehicle");
+    
+       
+        fetchVehicles();
     }
 
-    function renderDrivers() {
-        pageTitle.innerText = "Manage Drivers";
-        content.innerHTML = 
-            `<h3>Driver List</h3>
+    function updateTable(tableBody, vehicles) {
+        tableBody.innerHTML = "";
+        vehicles.forEach((vehicle) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${vehicle.name}</td>
+                <td>${vehicle.plate}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    
+
+    async function renderDrivers() {
+         pageTitle.innerText = "Manage Drivers";
+        content.innerHTML = `
+            <h3>Driver List</h3>
             <form id="driver-form">
                 <input type="text" id="driver-name" placeholder="Driver Name" required />
                 <input type="text" id="driver-license" placeholder="License Number" required />
@@ -120,6 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="driver-table">
                     <thead>
                         <tr>
+                             <th>id</th>
                             <th>Name</th>
                             <th>License</th>
                             <th>Actions</th>
@@ -127,24 +163,58 @@ document.addEventListener("DOMContentLoaded", () => {
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>`
-        ;
+            </div>
+        `;
+    
         const form = document.getElementById("driver-form");
         const tableBody = document.querySelector("#driver-table tbody");
-
-        form.addEventListener("submit", (e) => {
+    
+        
+        async function fetchDrivers() {
+            const { data, error } = await supabase.from("drivers").select("*");
+            if (error) {
+                console.error("Error fetching drivers:", error);
+                return;
+            }
+            updateTable(tableBody, data, "driver");
+        }
+    
+        
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const driverName = document.getElementById("driver-name").value;
             const driverLicense = document.getElementById("driver-license").value;
-
-            drivers.push({ name: driverName, license: driverLicense });
-            updateTable(tableBody, drivers, "driver");
+    
+            const { error } = await supabase.from("drivers").insert([{ name: driverName, license: driverLicense }]);
+            if (error) {
+                console.error("Error adding driver:", error);
+                return;
+            }
+    
+            fetchDrivers(); 
             form.reset();
         });
-
-        updateTable(tableBody, drivers, "driver");
+    
+       
+        fetchDrivers();
     }
 
+    function updateTable(tableBody, items, type) {
+        tableBody.innerHTML = "";
+        items.forEach((item) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.license}</td>
+                <td>
+                    <button class="delete-button" data-id="${item.id}">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    
 
 
     function renderMaintenance() {
@@ -203,6 +273,7 @@ function renderFuelManagement() {
             <table id="fuel-table">
                 <thead>
                     <tr>
+                        <th>id</th>
                         <th>Driver</th>
                         <th>Vehicle</th>
                         <th>Number Plate</th>
@@ -211,6 +282,7 @@ function renderFuelManagement() {
                         <th>Fuel Efficiency (Km/L)</th>
                         <th>Condition Image</th>
                         <th>Description</th>
+                        <th>actions</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -221,7 +293,18 @@ function renderFuelManagement() {
     const form = document.getElementById("fuel-form");
     const tableBody = document.querySelector("#fuel-table tbody");
 
-    form.addEventListener("submit", (e) => {
+    // Fetch and display fuel logs
+    async function fetchFuelLogs() {
+        const { data, error } = await supabase.from("fuel_logs").select("*");
+        if (error) {
+            console.error("Error fetching fuel logs:", error);
+            return;
+        }
+        updateTable(tableBody, data);
+    }
+
+    // Handle form submission
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const driver = document.getElementById("fuel-driver").value;
@@ -233,91 +316,77 @@ function renderFuelManagement() {
         const imageInput = document.getElementById("fuel-image");
 
         const efficiency = (km / fuelAmount).toFixed(2);
-        let image = "";
+        let imageUrl = "";
 
         if (imageInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                image = reader.result; // Convert image to Base64 string
-                console.log(image);
-                addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, description, tableBody);
-            };
-            reader.readAsDataURL(imageInput.files[0]);
-        } else {
-            addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, description, tableBody);
+            const file = imageInput.files[0];
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from("fuel-images")
+                .upload(`images/${file.name}`, file);
+
+            if (uploadError) {
+                console.error("Error uploading image:", uploadError);
+                return;
+            }
+
+           
+            imageUrl = `https://andnagnycyihmiizzrea.supabase.co/storage/v1/object/public/${uploadData.path}`;
         }
-    
+
+        const { error } = await supabase.from("fuel_logs").insert([
+            {
+                driver,
+                vehicle,
+                plate,
+                km,
+                fuel_amount: fuelAmount,
+                efficiency,
+                image_url: imageUrl,
+                description,
+            },
+        ]);
+
+        if (error) {
+            console.error("Error adding fuel log:", error);
+            return;
+        }
+
+        fetchFuelLogs();
         form.reset();
     });
-    
-    updateTable(tableBody, fuelLogs);
+
+    fetchFuelLogs(); 
 }
 
-function addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, description, tableBody) {
-    
-    fuelLogs.push({
-        driver,
-        vehicle,
-        plate,
-        km,
-        fuelAmount,
-        efficiency,
-        image, 
-        description,
-    });
-
-    
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-        <td>${driver || "N/A"}</td>
-        <td>${vehicle || "N/A"}</td>
-        <td>${plate || "N/A"}</td>
-        <td>${km || "N/A"}</td>
-        <td>${fuelAmount || "N/A"}</td>
-        <td>${efficiency || "N/A"}</td>
-        <td>
-            ${image 
-                ? `<img src="${image}" alt="Condition Image" 
-                      style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #000;" />`
-                : "No Image"}
-        </td>
-        <td>${description || "No Description"}</td>
-    `;
-
-   
-    tableBody.appendChild(row);
-}
-
-
-function updateTable(tableBody, data, type) {
-    tableBody.innerHTML = ""; 
+function updateTable(tableBody, data) {
+    tableBody.innerHTML = "";
 
     data.forEach((item) => {
         const row = document.createElement("tr");
 
         row.innerHTML = `
+            <td>${item.id || "N/A"}</td>
             <td>${item.driver || "N/A"}</td>
             <td>${item.vehicle || "N/A"}</td>
             <td>${item.plate || "N/A"}</td>
             <td>${item.km || "N/A"}</td>
-            <td>${item.fuelAmount || "N/A"}</td>
+            <td>${item.fuel_amount || "N/A"}</td>
             <td>${item.efficiency || "N/A"}</td>
             <td>
-                ${item.image 
-                    ? `<img src="${item.image}" alt="Condition Image" 
+                ${item.image_url 
+                    ? `<img src="${item.image_url}" alt="Condition Image" 
                           style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #000;" />`
                     : "No Image"}
             </td>
             <td>${item.description || "No Description"}</td>
+            <td>
+                <button data-id="${item.id}" class="delete-button">Delete</button>
+            </td>
         `;
 
-        
         tableBody.appendChild(row);
     });
 }
-
-
 
 
     function renderReports() {

@@ -254,7 +254,7 @@ function renderFuelManagement() {
 }
 
 function addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, description, tableBody) {
-    // Push the fuel log into the array with correct properties
+    
     fuelLogs.push({
         driver,
         vehicle,
@@ -262,11 +262,11 @@ function addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, d
         km,
         fuelAmount,
         efficiency,
-        image, // Base64 string for the image
+        image, 
         description,
     });
 
-    // Create the table row for the new log
+    
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -285,13 +285,13 @@ function addFuelLog(driver, vehicle, plate, km, fuelAmount, efficiency, image, d
         <td>${description || "No Description"}</td>
     `;
 
-    // Append the row to the table body
+   
     tableBody.appendChild(row);
 }
 
 
 function updateTable(tableBody, data, type) {
-    tableBody.innerHTML = ""; // Clear the table body
+    tableBody.innerHTML = ""; 
 
     data.forEach((item) => {
         const row = document.createElement("tr");
@@ -312,7 +312,7 @@ function updateTable(tableBody, data, type) {
             <td>${item.description || "No Description"}</td>
         `;
 
-        // Append the row to the table body
+        
         tableBody.appendChild(row);
     });
 }

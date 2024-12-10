@@ -199,5 +199,35 @@ body, html {
   .report-card p {
     margin: 5px 0;
   }
+
+  @media (max-width: 768px) {
+   
+    .dashboard-stats {
+        flex-direction: column;
+    }
+
+    .dashboard-stats .stat {
+        flex: 1 1 100%; 
+    }
+
+    
+    form input,
+    form textarea,
+    form button {
+        flex: 1 1 100%; 
+    }
+
+    
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    table th,
+    table td {
+        font-size: 14px; 
+        white-space: nowrap; 
+    }
+}
   
   

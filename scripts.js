@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Render Dashboard
     // Render Dashboard
-    function renderDashboard() {
+    async function renderDashboard() {
         pageTitle.innerText = "Dashboard";
         content.innerHTML = `
             <div class="dashboard-stats">
@@ -104,11 +104,29 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
     
-        // Use setTimeout to ensure DOM is rendered before calling updateDashboardStats
-        setTimeout(() => {
-            updateDashboardStats();
-        }, 100); // Small delay
+        // Fetch data for vehicles, drivers, and bookings before updating stats
+        await fetchDashboardData();
+        updateDashboardStats();
     }
+    
+    async function fetchDashboardData() {
+        try {
+            const { data: vehicleData, error: vehicleError } = await supabase.from("vehicles").select("*");
+            if (vehicleError) throw vehicleError;
+            vehicles = vehicleData;
+    
+            const { data: driverData, error: driverError } = await supabase.from("drivers").select("*");
+            if (driverError) throw driverError;
+            drivers = driverData;
+    
+            const { data: bookingData, error: bookingError } = await supabase.from("bookings").select("*");
+            if (bookingError) throw bookingError;
+            bookings = bookingData;
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+        }
+    }
+    
     
     async function renderVehicles() {
         pageTitle.innerText = "Manage Vehicles";
@@ -335,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
             row.innerHTML = `
                 <td>${booking.vehicle_name}</td>
                 <td>${booking.vehicle_plate}</td>
-                <td>${booking.driver_name}</td>
+                <td>${booking.driver}</td>
                 <td>${booking.date}</td>
             `;
             tableBody.appendChild(row);

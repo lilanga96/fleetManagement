@@ -18,6 +18,7 @@ body, html {
     color: white;
     width: 250px;
     padding: 20px;
+    
   }
   
   .menu-title {
@@ -59,13 +60,13 @@ body, html {
   }
   
   
-  /* Existing styles above this point */
+
 
 .dashboard-stats {
     display: flex;
-    justify-content: flex-start; /* Adjust layout to prevent overlap */
-    flex-wrap: wrap; /* Allow boxes to wrap on smaller screens */
-    gap: 20px;; /* Adjust layout for smaller screens */
+    justify-content: flex-start; 
+    flex-wrap: wrap;
+    gap: 20px;; 
   }
   
   .dashboard-stats .stat {
@@ -73,13 +74,13 @@ body, html {
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 20px;
-    width: 200px; /* Fixed box width */
+    width: 200px; 
     text-align: center;
     font-size: 16px;
     color: #333;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
-    flex-direction: column; /* Stack elements vertically */
+    flex-direction: column; 
     align-items: center; 
   }
   
@@ -92,8 +93,8 @@ body, html {
   }
   
   .dashboard-stats .stat input {
-    width: 100%; /* Ensure input takes full width of the container */
-  max-width: 180px; /* Ensure input stays smaller than the stat box */
+    width: 100%; 
+  max-width: 180px; 
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -104,7 +105,7 @@ body, html {
   }
   
   .dashboard-stats .stat input:focus {
-    border-color: #d32f2f; /* Highlight input on focus */
+    border-color: #d32f2f; 
     outline: none;
     box-shadow: 0 0 4px rgba(211, 47, 47, 0.5);
   }
@@ -127,7 +128,7 @@ body, html {
   }
   
   .dashboard-stats {
-    justify-content: center; /* Center align the stats */
+    justify-content: center; 
   }
   
  
@@ -149,7 +150,7 @@ body, html {
   table img {
     max-width: 50px;
     max-height: 50px;
-    object-fit: cover; /* Ensures the image retains aspect ratio */
+    object-fit: cover; 
 }
   
   .table-container {
@@ -200,7 +201,7 @@ body, html {
     margin: 5px 0;
   }
 
-  /* Dashboard Statistics */
+ 
 .dashboard-stats {
   display: flex;
   gap: 20px;
@@ -230,7 +231,7 @@ body, html {
   color: #333;
 }
 
-/* Booked Vehicles Section */
+
 .booked-vehicles {
   margin-top: 30px;
 }
@@ -253,7 +254,7 @@ body, html {
   gap: 20px;
 }
 
-/* Vehicle Card */
+
 .vehicle-card {
   background: #fff;
   border-radius: 12px;

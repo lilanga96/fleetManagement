@@ -32,17 +32,16 @@ document.addEventListener("DOMContentLoaded", () => {
             bookings.forEach((booking) => {
                 const vehicleCard = document.createElement("div");
                 vehicleCard.className = "vehicle-card";
-                vehicleCard.innerHTML = `
-                    <h4>${booking.vehicle_name}</h4> <!-- Use the correct property -->
-                    <p><strong>Number Plate:</strong> ${booking.vehicle_plate}</p> <!-- Use the correct property -->
-                      <p><strong>Driver:</strong> ${booking.driver}</p><!-- Use the correct property -->
-                    <p><strong>Booking Date:</strong> ${booking.date}</p>
-                `;
+                vehicleCard.innerHTML = 
+                    `<h4>${booking.vehicle.name}</h4>
+                    <p><strong>Number Plate:</strong> ${booking.vehicle_plate}</p>
+                    <p><strong>Driver:</strong> ${booking.driver.name}</p>
+                    <p><strong>Booking Date:</strong> ${booking.date}</p>`
+                ;
                 bookedVehiclesList.appendChild(vehicleCard);
             });
         }
     }
-    
 
     menuItems.forEach((item) => {
         item.addEventListener("click", () => {
@@ -76,21 +75,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Render Dashboard
-    // Render Dashboard
+   
+    
     async function renderDashboard() {
         pageTitle.innerText = "Dashboard";
-        content.innerHTML = `
-            <div class="dashboard-stats">
-                <div class="stat">
+        content.innerHTML = 
+            `<div class="dashboard-stats">
+                <div class="stat" id="total-vehicles-card">
                     <label>Total Vehicles:</label>
                     <span id="total-vehicles">0</span>
                 </div>
-                <div class="stat">
+                <div class="stat" id="active-drivers-card">
                     <label>Active Drivers:</label>
                     <span id="active-drivers">0</span>
                 </div>
-                <div class="stat">
+                <div class="stat" id="total-bookings-card">
                     <label>Total Bookings:</label>
                     <span id="total-bookings">0</span>
                 </div>
@@ -101,32 +100,90 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="booked-vehicles-list" id="booked-vehicles-list">
                     <!-- Booked vehicle entries will be dynamically added here -->
                 </div>
-            </div>
-        `;
-    
-        // Fetch data for vehicles, drivers, and bookings before updating stats
+            </div>`;
+        
+       
         await fetchDashboardData();
         updateDashboardStats();
+    
+       
+        document.getElementById("total-bookings-card").addEventListener("click", renderBookingsPage);
     }
+  
+    async function renderBookingsPage() {
+        pageTitle.innerText = "Booked Vehicles";
+        content.innerHTML = `
+            <h3>Booked Vehicles</h3>
+            <div class="table-container">
+                <table id="bookings-table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Number Plate</th>
+                            <th>Driver</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Bookings will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>`;
+        
+        const tableBody = document.querySelector("#bookings-table tbody");
+    
+        try {
+            
+            const { data: bookings, error } = await supabase
+                .from('bookings')
+                .select(`
+                    driver_id,
+                    vehicles (name, plate),
+                    date,
+                    drivers!fk_driver_id (name)
+                `);
+    
+            if (error) {
+                console.error("Error fetching bookings:", error);
+                return;
+            }
+    
+            updateBookingTable(tableBody, bookings);
+        } catch (error) {
+            console.error("Error rendering bookings page:", error);
+        }
+    }
+    
     
     async function fetchDashboardData() {
         try {
+            
             const { data: vehicleData, error: vehicleError } = await supabase.from("vehicles").select("*");
             if (vehicleError) throw vehicleError;
             vehicles = vehicleData;
     
+            
             const { data: driverData, error: driverError } = await supabase.from("drivers").select("*");
             if (driverError) throw driverError;
             drivers = driverData;
     
-            const { data: bookingData, error: bookingError } = await supabase.from("bookings").select("*");
+            
+            const { data: bookingData, error: bookingError } = await supabase
+            
+            .from('bookings')
+            .select(`
+                driver_id,
+                vehicles (name, plate),
+                date,
+                drivers!fk_driver_id (name)
+            `);
             if (bookingError) throw bookingError;
             bookings = bookingData;
+    
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         }
     }
-    
     
     async function renderVehicles() {
         pageTitle.innerText = "Manage Vehicles";
@@ -277,7 +334,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <select id="booked-vehicle" required>
                     <option value="" disabled selected>Select a Vehicle</option>
                 </select>
-                <input type="text" id="booked-driver" placeholder="Driver Name" required />
+                <select id="booked-driver" required>
+                    <option value="" disabled selected>Select a Driver</option>
+                </select>
                 <input type="date" id="booking-date" required />
                 <button type="submit">Confirm Booking</button>
             </form>
@@ -293,73 +352,108 @@ document.addEventListener("DOMContentLoaded", () => {
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>
-        `;
+            </div>`
+        ;
     
         const form = document.getElementById("booking-form");
         const tableBody = document.querySelector("#booking-table tbody");
         const vehicleSelect = document.getElementById("booked-vehicle");
+        const driverSelect = document.getElementById("booked-driver");
     
         
-        async function fetchBookingData() {
-            const { data: vehicleData, error: vehicleError } = await supabase.from("vehicles").select("*");
-            if (vehicleError) {
-                console.error("Error fetching vehicles for booking:", vehicleError);
+        async function fetchVehicles() {
+            const { data: vehicles, error } = await supabase.from('vehicles').select('id, name, plate');
+            if (error) {
+                console.error("Error fetching vehicles:", error);
                 return;
             }
-            vehicles = vehicleData;
     
-            vehicleData.forEach((vehicle) => {
+            vehicles.forEach(vehicle => {
                 const option = document.createElement("option");
                 option.value = vehicle.id;
-                option.innerText = `${vehicle.name} - ${vehicle.plate}`;
+                option.textContent =` ${vehicle.name} (${vehicle.plate})`;
                 vehicleSelect.appendChild(option);
             });
-    
-            const { data: bookingData, error: bookingError } = await supabase.from("bookings").select("*");
-            if (bookingError) {
-                console.error("Error fetching bookings:", bookingError);
-                return;
-            }
-            bookings = bookingData;
-            updateBookingTable(tableBody, bookingData);
-            updateDashboardStats();
         }
     
+       
+        async function fetchDrivers() {
+            const { data: drivers, error } = await supabase.from('drivers').select('id, name');
+            if (error) {
+                console.error("Error fetching drivers:", error);
+                return;
+            }
+    
+            drivers.forEach(driver => {
+                const option = document.createElement("option");
+                option.value = driver.id;
+                option.textContent = driver.name;
+                driverSelect.appendChild(option);
+            });
+        }
+    
+        // Fetch and display booking data in the table
+        async function fetchBookingData() {
+            try {
+                const { data, error } = await supabase
+                    .from('bookings')
+                    .select(`
+                        driver_id,
+                        vehicles (name, plate),
+                        date,
+                        drivers!fk_driver_id (name)
+                    `);
+        
+                if (error) throw error;
+        
+                updateBookingTable(tableBody, data);  
+            } catch (error) {
+                console.error("Error fetching booking data:", error);
+            }
+        }
+        
+       
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const selectedVehicleId = document.getElementById("booked-vehicle").value;
-            const driverName = document.getElementById("booked-driver").value;
+            const selectedDriverId = document.getElementById("booked-driver").value;
             const bookingDate = document.getElementById("booking-date").value;
     
-            const { error } = await supabase.from("bookings").insert([{ vehicle_id: selectedVehicleId, driver_name: driverName, date: bookingDate }]);
+            const { error } = await supabase.from("bookings").insert([
+                {
+                    vehicle_id: selectedVehicleId,
+                    driver_id: selectedDriverId,
+                    date: bookingDate,
+                }
+            ]);
+    
             if (error) {
                 console.error("Error booking vehicle:", error);
                 return;
             }
     
-            fetchBookingData(); 
+            fetchBookingData();
             form.reset();
         });
     
-        fetchBookingData();
+        fetchVehicles(); 
+        fetchDrivers(); 
+        fetchBookingData(); 
     }
     
-  
     function updateBookingTable(tableBody, bookings) {
         tableBody.innerHTML = "";
         bookings.forEach((booking) => {
             const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${booking.vehicle_name}</td>
-                <td>${booking.vehicle_plate}</td>
-                <td>${booking.driver}</td>
-                <td>${booking.date}</td>
-            `;
+            row.innerHTML = 
+                `<td>${booking.vehicles.name}</td>
+                <td>${booking.vehicles.plate}</td>
+                <td>${booking.drivers.name}</td>
+                <td>${booking.date}</td>`
+            ;
             tableBody.appendChild(row);
         });
     }
-
     
 
     function renderFuelManagement() {
@@ -394,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("fuel-form");
         const tableBody = document.querySelector("#fuel-table tbody");
     
-        // Fetch and display fuel logs
+        
         async function fetchFuelLogs() {
             const { data, error } = await supabase.from("fuel_logs").select("*");
             if (error) {
@@ -404,7 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateTable(tableBody, data);
         }
     
-        // Handle form submission
+       
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
     
@@ -477,7 +571,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.appendChild(row);
         });
     
-        // Bind delete buttons
+        
         document.querySelectorAll(".delete-button").forEach((button) => {
             button.addEventListener("click", async () => {
                 const id = button.getAttribute("data-id");

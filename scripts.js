@@ -338,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <option value="" disabled selected>Select a Driver</option>
                 </select>
                 <input type="date" id="booking-date" required />
+                <input type="time" id="time-taken" required />
                 <button type="submit">Confirm Booking</button>
             </form>
             <div class="table-container">
@@ -348,114 +349,152 @@ document.addEventListener("DOMContentLoaded", () => {
                             <th>Number Plate</th>
                             <th>Driver</th>
                             <th>Date</th>
+                            <th>Time Taken</th>
+                            <th>Time Returned</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>`
-        ;
+            </div>`;
     
-        const form = document.getElementById("booking-form");
-        const tableBody = document.querySelector("#booking-table tbody");
-        const vehicleSelect = document.getElementById("booked-vehicle");
-        const driverSelect = document.getElementById("booked-driver");
     
-        
-        async function fetchVehicles() {
-            const { data: vehicles, error } = await supabase.from('vehicles').select('id, name, plate');
-            if (error) {
-                console.error("Error fetching vehicles:", error);
-                return;
-            }
+            const form = document.getElementById("booking-form");
+            const tableBody = document.querySelector("#booking-table tbody");
+            const vehicleSelect = document.getElementById("booked-vehicle");
+            const driverSelect = document.getElementById("booked-driver");
     
-            vehicles.forEach(vehicle => {
-                const option = document.createElement("option");
-                option.value = vehicle.id;
-                option.textContent =` ${vehicle.name} (${vehicle.plate})`;
-                vehicleSelect.appendChild(option);
-            });
-        }
-    
-       
-        async function fetchDrivers() {
-            const { data: drivers, error } = await supabase.from('drivers').select('id, name');
-            if (error) {
-                console.error("Error fetching drivers:", error);
-                return;
-            }
-    
-            drivers.forEach(driver => {
-                const option = document.createElement("option");
-                option.value = driver.id;
-                option.textContent = driver.name;
-                driverSelect.appendChild(option);
-            });
-        }
-    
-        // Fetch and display booking data in the table
-        async function fetchBookingData() {
-            try {
-                const { data, error } = await supabase
-                    .from('bookings')
-                    .select(`
-                        driver_id,
-                        vehicles (name, plate),
-                        date,
-                        drivers!fk_driver_id (name)
-                    `);
-        
-                if (error) throw error;
-        
-                updateBookingTable(tableBody, data);  
-            } catch (error) {
-                console.error("Error fetching booking data:", error);
-            }
-        }
-        
-       
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const selectedVehicleId = document.getElementById("booked-vehicle").value;
-            const selectedDriverId = document.getElementById("booked-driver").value;
-            const bookingDate = document.getElementById("booking-date").value;
-    
-            const { error } = await supabase.from("bookings").insert([
-                {
-                    vehicle_id: selectedVehicleId,
-                    driver_id: selectedDriverId,
-                    date: bookingDate,
+            async function fetchVehicles() {
+                const { data: vehicles, error } = await supabase.from("vehicles").select("id, name, plate");
+                if (error) {
+                    console.error("Error fetching vehicles:", error);
+                    return;
                 }
-            ]);
-    
-            if (error) {
-                console.error("Error booking vehicle:", error);
-                return;
+        
+                vehicles.forEach(vehicle => {
+                    const option = document.createElement("option");
+                    option.value = vehicle.id;
+                    option.textContent = `${vehicle.name} (${vehicle.plate})`;
+                    vehicleSelect.appendChild(option);
+                });
             }
+        
+            async function fetchDrivers() {
+                const { data: drivers, error } = await supabase.from("drivers").select("id, name");
+                if (error) {
+                    console.error("Error fetching drivers:", error);
+                    return;
+                }
+        
+                drivers.forEach(driver => {
+                    const option = document.createElement("option");
+                    option.value = driver.id;
+                    option.textContent = driver.name;
+                    driverSelect.appendChild(option);
+                });
+            }
+        
+        
     
+            async function fetchBookingData() {
+                try {
+                    const { data, error } = await supabase
+                        .from("bookings")
+                        .select(`
+                            vehicle_id,
+                            driver_id,
+                            date,
+                            time_taken,
+                            time_returned,
+                            vehicles (name, plate),
+                            drivers!fk_driver_id (name)
+                        `);
+        
+                    if (error) throw error;
+        
+                    updateBookingTable(tableBody, data);
+                } catch (error) {
+                    console.error("Error fetching booking data:", error);
+                }
+            }
+        
+        
+        
+        
+        
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const selectedVehicleId = document.getElementById("booked-vehicle").value;
+                const selectedDriverId = document.getElementById("booked-driver").value;
+                const bookingDate = document.getElementById("booking-date").value;
+                const timeTaken = document.getElementById("time-taken").value;
+        
+                const { error } = await supabase.from("bookings").insert([
+                    {
+                        vehicle_id: selectedVehicleId,
+                        driver_id: selectedDriverId,
+                        date: bookingDate,
+                        time_taken: timeTaken,
+                        time_returned: null // Initially empty
+                    }
+                ]);
+        
+                if (error) {
+                    console.error("Error booking vehicle:", error);
+                    return;
+                }
+        
+                fetchBookingData();
+                form.reset();
+            });
+        
+            fetchVehicles();
+            fetchDrivers();
             fetchBookingData();
-            form.reset();
-        });
+        }
+        
+        
     
-        fetchVehicles(); 
-        fetchDrivers(); 
-        fetchBookingData(); 
-    }
-    
-    function updateBookingTable(tableBody, bookings) {
-        tableBody.innerHTML = "";
-        bookings.forEach((booking) => {
-            const row = document.createElement("tr");
-            row.innerHTML = 
-                `<td>${booking.vehicles.name}</td>
-                <td>${booking.vehicles.plate}</td>
-                <td>${booking.drivers.name}</td>
-                <td>${booking.date}</td>`
-            ;
-            tableBody.appendChild(row);
-        });
-    }
-    
-
+        function updateBookingTable(tableBody, bookings) {
+            tableBody.innerHTML = "";
+            bookings.forEach((booking) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${booking.vehicles.name}</td>
+                    <td>${booking.vehicles.plate}</td>
+                    <td>${booking.drivers.name}</td>
+                    <td>${booking.date}</td>
+                    <td>${booking.time_taken}</td>
+                    <td>
+                        <input type="time" value="${booking.time_returned || ''}" 
+                            data-booking-id="${booking.vehicle_id}" class="time-returned-input"/>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        
+            // Add event listener to update "Time Returned"
+            document.querySelectorAll(".time-returned-input").forEach(input => {
+                input.addEventListener("change", async (e) => {
+                    const newTimeReturned = e.target.value;
+                    const bookingId = e.target.getAttribute("data-booking-id");
+        
+                    if (!newTimeReturned) return;
+        
+                    // Update Supabase database
+                    const { error } = await supabase
+                        .from("bookings")
+                        .update({ time_returned: newTimeReturned })
+                        .eq("vehicle_id", bookingId);
+        
+                    if (error) {
+                        console.error("Error updating time returned:", error);
+                        return;
+                    }
+        
+                    console.log("Time returned updated successfully!");
+                });
+            });
+        }
     function renderFuelManagement() {
         pageTitle.innerText = "Driver and Vehicle logs";
         content.innerHTML = `

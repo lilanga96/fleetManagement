@@ -562,4 +562,71 @@ document.addEventListener("DOMContentLoaded", () => {
                 imageUrl = `https://andnagnycyihmiizzrea.supabase.co/storage/v1/object/public/fuel-images/${uploadData.path}`;
             }
     
-            con
+            const { error } = await supabase.from("fuel_logs").insert([
+                {
+                    driver,
+                    vehicle,
+                    plate,
+                    description,
+                    image_url: imageUrl,
+                },
+            ]);
+    
+            if (error) {
+                console.error("Error adding fuel log:", error);
+                return;
+            }
+    
+            fetchFuelLogs();
+            form.reset();
+        });
+    
+        fetchFuelLogs();
+    }
+    
+    function updateTable(tableBody, data) {
+        tableBody.innerHTML = "";
+    
+        data.forEach((item) => {
+            const row = document.createElement("tr");
+    
+            row.innerHTML = `
+                <td>${item.id || "N/A"}</td>
+                <td>${item.driver || "N/A"}</td>
+                <td>${item.vehicle || "N/A"}</td>
+                <td>${item.plate || "N/A"}</td>
+                <td>${item.description || "No Description"}</td>
+                <td>
+                    ${item.image_url 
+                        ? `<img src="${item.image_url}" alt="Condition Image" 
+                            style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #000;" />`
+                        : "No Image"}
+                </td>
+                <td>
+                    <button data-id="${item.id}" class="delete-button">Delete</button>
+                </td>
+            `;
+    
+            tableBody.appendChild(row);
+        });
+    
+        
+        document.querySelectorAll(".delete-button").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const id = button.getAttribute("data-id");
+                const { error } = await supabase.from("fuel_logs").delete().eq("id", id);
+    
+                if (error) {
+                    console.error("Error deleting fuel log:", error);
+                    return;
+                }
+    
+                fetchFuelLogs();
+            });
+        });
+    }
+    
+    renderDashboard();
+    updateDashboardStats(); 
+});
+   

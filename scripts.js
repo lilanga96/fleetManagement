@@ -407,10 +407,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             time_returned,
                             vehicles (name, plate),
                             drivers!fk_driver_id (name)
-                        `);
-        
+                        `)
+                        .limit(100);
+            
                     if (error) throw error;
-        
+            
+                    console.log("Booking data received:", data.length, data);
                     updateBookingTable(tableBody, data);
                 } catch (error) {
                     console.error("Error fetching booking data:", error);

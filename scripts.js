@@ -429,6 +429,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const selectedDriverId = document.getElementById("booked-driver").value;
                 const bookingDate = document.getElementById("booking-date").value;
                 const timeTaken = document.getElementById("time-taken").value;
+
+                const { data: activeBookings, error: activeBookingError } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("driver_id", selectedDriverId)
+    .is("time_returned", null);
+
+if (activeBookingError) {
+    console.error("Error checking active bookings:", activeBookingError);
+    return;
+}
+
+if (activeBookings.length > 0) {
+    alert("This driver already has an active booking. Return the previous vehicle before booking a new one.");
+    return;
+}
+
         
                 const { error } = await supabase.from("bookings").insert([
                     {
@@ -436,10 +453,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         driver_id: selectedDriverId,
                         date: bookingDate,
                         time_taken: timeTaken,
-                        time_returned: null // Initially empty
+                        time_returned: null
                     }
                 ]);
-        
                 if (error) {
                     console.error("Error booking vehicle:", error);
                     return;
